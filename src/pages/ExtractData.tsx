@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +32,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import * as XLSX from 'xlsx';
 
 // Define interface for extracted data items
 interface ExtractedDataItem {
@@ -99,15 +99,14 @@ const ExtractData = () => {
       const result = await extractInvoiceData(invoiceFile, selectedModelId);
       
       if (result.success && result.data) {
-        // Convert the data to our format with selection state
         const dataItems: ExtractedDataItem[] = Object.entries(result.data).map(([key, value]) => ({
           key,
           value: String(value),
-          selected: true // Default to selected
+          selected: true
         }));
         
         setExtractedDataItems(dataItems);
-        setActiveStep(2.5); // New intermediate step for configure with checkboxes
+        setActiveStep(2.5);
         toast({
           title: "Success",
           description: "Invoice data extracted successfully",
@@ -143,10 +142,8 @@ const ExtractData = () => {
   };
 
   const handleConfigureNext = () => {
-    // Filter only selected items
     const selectedItems = extractedDataItems.filter(item => item.selected);
     
-    // Convert to object format for final data
     const finalData: Record<string, string> = {};
     selectedItems.forEach(item => {
       finalData[item.key] = item.value;
@@ -180,18 +177,25 @@ const ExtractData = () => {
   const downloadExcel = () => {
     if (!finalExtractedData) return;
     
-    // Create CSV content
-    let csvContent = "Key,Value\n";
-    Object.entries(finalExtractedData).forEach(([key, value]) => {
-      csvContent += `"${key}","${value}"\n`;
-    });
+    const workbook = XLSX.utils.book_new();
     
-    const dataBlob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(dataBlob);
+    const worksheetData = [
+      ['Key', 'Value'],
+      ...Object.entries(finalExtractedData).map(([key, value]) => [key, value])
+    ];
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Invoice Data');
+    
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'invoice_data.csv';
+    link.download = 'invoice_data.xlsx';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -199,7 +203,7 @@ const ExtractData = () => {
     
     toast({
       title: "Download complete",
-      description: "Excel/CSV file downloaded successfully",
+      description: "Excel file downloaded successfully",
     });
   };
 
@@ -237,7 +241,6 @@ const ExtractData = () => {
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <h1 className="text-3xl font-semibold mb-6">Extract Invoice Data</h1>
       
-      {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${activeStep >= 1 ? 'bg-primary border-primary text-white' : 'border-gray-300'}`}>
@@ -259,7 +262,6 @@ const ExtractData = () => {
         </div>
       </div>
       
-      {/* Step 1: Upload */}
       {activeStep === 1 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-medium mb-4">Upload Invoice</h2>
@@ -287,7 +289,6 @@ const ExtractData = () => {
         </div>
       )}
       
-      {/* Step 2: Configure */}
       {activeStep === 2 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-medium mb-4">Configure Extraction</h2>
@@ -364,8 +365,7 @@ const ExtractData = () => {
           </div>
         </div>
       )}
-
-      {/* Step 2.5: Configure with data selection */}
+      
       {activeStep === 2.5 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-medium mb-4">Select Data to Extract</h2>
@@ -418,7 +418,6 @@ const ExtractData = () => {
         </div>
       )}
       
-      {/* Step 3: Results */}
       {activeStep === 3 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-medium mb-4">Extracted Data</h2>
