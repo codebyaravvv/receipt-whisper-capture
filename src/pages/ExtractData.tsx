@@ -11,16 +11,43 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Check, FileText, UploadCloud, Loader2, RotateCw } from "lucide-react";
+import { 
+  Check, 
+  FileText, 
+  UploadCloud, 
+  Loader2, 
+  RotateCw, 
+  FileJson, 
+  FileSpreadsheet, 
+  Download, 
+  Clipboard 
+} from "lucide-react";
 import { extractInvoiceData, fetchAvailableModels } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Define interface for extracted data items
+interface ExtractedDataItem {
+  key: string;
+  value: string;
+  selected: boolean;
+}
 
 const ExtractData = () => {
   const [activeStep, setActiveStep] = useState(1);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [selectedModelId, setSelectedModelId] = useState("google-vision");
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedData, setExtractedData] = useState<Record<string, string> | null>(null);
+  const [extractedDataItems, setExtractedDataItems] = useState<ExtractedDataItem[]>([]);
+  const [finalExtractedData, setFinalExtractedData] = useState<Record<string, string> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: availableModels = [], isLoading: isLoadingModels } = useQuery({
@@ -72,8 +99,15 @@ const ExtractData = () => {
       const result = await extractInvoiceData(invoiceFile, selectedModelId);
       
       if (result.success && result.data) {
-        setExtractedData(result.data);
-        setActiveStep(3);
+        // Convert the data to our format with selection state
+        const dataItems: ExtractedDataItem[] = Object.entries(result.data).map(([key, value]) => ({
+          key,
+          value: String(value),
+          selected: true // Default to selected
+        }));
+        
+        setExtractedDataItems(dataItems);
+        setActiveStep(2.5); // New intermediate step for configure with checkboxes
         toast({
           title: "Success",
           description: "Invoice data extracted successfully",
@@ -97,10 +131,105 @@ const ExtractData = () => {
     }
   };
 
+  const handleToggleSelection = (index: number) => {
+    setExtractedDataItems(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        selected: !updated[index].selected
+      };
+      return updated;
+    });
+  };
+
+  const handleConfigureNext = () => {
+    // Filter only selected items
+    const selectedItems = extractedDataItems.filter(item => item.selected);
+    
+    // Convert to object format for final data
+    const finalData: Record<string, string> = {};
+    selectedItems.forEach(item => {
+      finalData[item.key] = item.value;
+    });
+    
+    setFinalExtractedData(finalData);
+    setActiveStep(3);
+  };
+
+  const downloadJSON = () => {
+    if (!finalExtractedData) return;
+    
+    const dataStr = JSON.stringify(finalExtractedData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'invoice_data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Download complete",
+      description: "JSON file downloaded successfully",
+    });
+  };
+
+  const downloadExcel = () => {
+    if (!finalExtractedData) return;
+    
+    // Create CSV content
+    let csvContent = "Key,Value\n";
+    Object.entries(finalExtractedData).forEach(([key, value]) => {
+      csvContent += `"${key}","${value}"\n`;
+    });
+    
+    const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'invoice_data.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Download complete",
+      description: "Excel/CSV file downloaded successfully",
+    });
+  };
+
+  const copyToClipboard = () => {
+    if (!finalExtractedData) return;
+    
+    const textData = Object.entries(finalExtractedData)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n');
+    
+    navigator.clipboard.writeText(textData).then(() => {
+      toast({
+        title: "Copied to clipboard",
+        description: "Invoice data copied to clipboard successfully",
+      });
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy data to clipboard",
+        variant: "destructive",
+      });
+    });
+  };
+
   const startOver = () => {
     setInvoiceFile(null);
     setSelectedModelId("google-vision");
-    setExtractedData(null);
+    setExtractedDataItems([]);
+    setFinalExtractedData(null);
     setActiveStep(1);
   };
 
@@ -116,7 +245,7 @@ const ExtractData = () => {
           </div>
           <div className={`flex-1 h-1 mx-2 ${activeStep >= 2 ? 'bg-primary' : 'bg-gray-300'}`}></div>
           <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${activeStep >= 2 ? 'bg-primary border-primary text-white' : 'border-gray-300'}`}>
-            {activeStep > 2 ? <Check className="h-4 w-4" /> : '2'}
+            {activeStep > 2.5 ? <Check className="h-4 w-4" /> : '2'}
           </div>
           <div className={`flex-1 h-1 mx-2 ${activeStep >= 3 ? 'bg-primary' : 'bg-gray-300'}`}></div>
           <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${activeStep >= 3 ? 'bg-primary border-primary text-white' : 'border-gray-300'}`}>
@@ -235,18 +364,71 @@ const ExtractData = () => {
           </div>
         </div>
       )}
+
+      {/* Step 2.5: Configure with data selection */}
+      {activeStep === 2.5 && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-medium mb-4">Select Data to Extract</h2>
+          
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">
+              The OCR model has extracted the following data. Select the fields you want to include in the final result.
+            </p>
+          </div>
+          
+          <div className="space-y-4 mb-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">Include</TableHead>
+                  <TableHead>Field</TableHead>
+                  <TableHead>Extracted Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {extractedDataItems.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="text-center">
+                      <Checkbox 
+                        checked={item.selected}
+                        onCheckedChange={() => handleToggleSelection(index)}
+                        id={`check-${index}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Label htmlFor={`check-${index}`} className="cursor-pointer">
+                        {item.key}
+                      </Label>
+                    </TableCell>
+                    <TableCell>{item.value}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setActiveStep(2)}>
+              Back
+            </Button>
+            <Button onClick={handleConfigureNext}>
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
       
       {/* Step 3: Results */}
       {activeStep === 3 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-medium mb-4">Extracted Data</h2>
           
-          {extractedData && (
-            <div className="space-y-4 mb-6">
+          {finalExtractedData && (
+            <div className="space-y-6 mb-6">
               <div className="bg-gray-50 p-4 rounded-md">
                 <table className="w-full">
                   <tbody>
-                    {Object.entries(extractedData).map(([key, value]) => (
+                    {Object.entries(finalExtractedData).map(([key, value]) => (
                       <tr key={key} className="border-b last:border-b-0">
                         <td className="py-2 font-medium text-gray-700">{key}</td>
                         <td className="py-2">{value}</td>
@@ -256,30 +438,31 @@ const ExtractData = () => {
                 </table>
               </div>
               
-              <div className="flex gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Button 
                   variant="outline" 
-                  onClick={() => {
-                    // In a real app, this would download data as CSV/Excel
-                    toast({
-                      title: "Export feature",
-                      description: "In a production app, this would export the data to CSV/Excel",
-                    });
-                  }}
+                  className="flex items-center justify-center gap-2"
+                  onClick={downloadJSON}
                 >
-                  Export to CSV
+                  <FileJson className="h-4 w-4" />
+                  Download JSON
                 </Button>
                 
                 <Button 
                   variant="outline"
-                  onClick={() => {
-                    // In a real app, this would copy data to clipboard
-                    toast({
-                      title: "Copy feature",
-                      description: "In a production app, this would copy the data to clipboard",
-                    });
-                  }}
+                  className="flex items-center justify-center gap-2"
+                  onClick={downloadExcel}
                 >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Download EXCEL
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 md:col-span-2"
+                  onClick={copyToClipboard}
+                >
+                  <Clipboard className="h-4 w-4" />
                   Copy to Clipboard
                 </Button>
               </div>

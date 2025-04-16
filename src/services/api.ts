@@ -54,17 +54,44 @@ export const extractInvoiceData = async (
     // Mock success response after 2 seconds (simulating processing time)
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({
-          success: true,
-          data: {
-            "Invoice Number": "INV-2023-0042",
-            "Date": "2023-04-16",
-            "Due Date": "2023-05-16",
-            "Total Amount": "$1,245.00",
-            "Vendor": "Office Supplies Inc.",
-            "Tax": "$105.00"
-          }
-        });
+        // Check if using a custom model
+        if (modelId !== 'google-vision') {
+          // Provide more comprehensive extraction for custom models
+          resolve({
+            success: true,
+            data: {
+              "Invoice Number": "INV-2023-0042",
+              "Date": "2023-04-16",
+              "Due Date": "2023-05-16",
+              "PO Number": "PO-2023-1234",
+              "Vendor": "Office Supplies Inc.",
+              "Vendor Address": "123 Business Ave, Suite 400, Commerce City, CA 94123",
+              "Vendor Phone": "(555) 123-4567",
+              "Vendor Email": "billing@officesupplies.example.com",
+              "Customer": "Acme Corporation",
+              "Customer Address": "789 Enterprise St, Innovation Park, NY 10001",
+              "Subtotal": "$1,140.00",
+              "Tax": "$105.00",
+              "Shipping": "$0.00",
+              "Total Amount": "$1,245.00",
+              "Payment Terms": "Net 30",
+              "Notes": "Thank you for your business!"
+            }
+          });
+        } else {
+          // Default Google Vision API response
+          resolve({
+            success: true,
+            data: {
+              "Invoice Number": "INV-2023-0042",
+              "Date": "2023-04-16",
+              "Due Date": "2023-05-16",
+              "Total Amount": "$1,245.00",
+              "Vendor": "Office Supplies Inc.",
+              "Tax": "$105.00"
+            }
+          });
+        }
       }, 2000);
     });
   } catch (error) {
