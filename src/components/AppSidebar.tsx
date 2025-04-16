@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   FileText,
   Settings,
-  BookOpen
+  History
 } from "lucide-react";
 
 import {
@@ -34,9 +34,9 @@ export function AppSidebar() {
       path: "/extract",
     },
     {
-      title: "Train Model",
-      icon: BookOpen,
-      path: "/train",
+      title: "View History",
+      icon: History,
+      path: "/history",
     },
     {
       title: "Settings",

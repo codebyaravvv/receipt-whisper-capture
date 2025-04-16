@@ -12,6 +12,7 @@ import ExtractData from "./pages/ExtractData";
 import TrainModel from "./pages/TrainModel";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import History from "./pages/History";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/extract" element={<ExtractData />} />
                 <Route path="/train" element={<TrainModel />} />
+                <Route path="/history" element={<History />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
