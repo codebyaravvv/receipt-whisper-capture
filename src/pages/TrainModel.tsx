@@ -18,6 +18,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2, Upload, X, UploadCloud, FileText } from "lucide-react";
 import { trainCustomModel } from "@/services/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -29,6 +31,7 @@ const formSchema = z.object({
 });
 
 const TrainModel = () => {
+  const [activeTab, setActiveTab] = useState("train");
   const [trainingFiles, setTrainingFiles] = useState<File[]>([]);
   const [isTraining, setIsTraining] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +128,18 @@ const TrainModel = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <h1 className="text-3xl font-semibold mb-6">Train Custom OCR Model</h1>
+      <h1 className="text-3xl font-semibold mb-6">Document Processing</h1>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="grid grid-cols-2 w-full">
+          <TabsTrigger value="extract">
+            <Link to="/extract" className="w-full h-full flex items-center justify-center">
+              Extract Data
+            </Link>
+          </TabsTrigger>
+          <TabsTrigger value="train">Train Custom Model</TabsTrigger>
+        </TabsList>
+      </Tabs>
       
       <div className="bg-white rounded-lg shadow-md p-6">
         <Form {...form}>
