@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import HomePage from "./pages/HomePage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ExtractData from "./pages/ExtractData";
@@ -113,7 +114,7 @@ const AppRoutes = () => {
         </div>
       ) : (
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route 
             path="/login" 
             element={
@@ -138,7 +139,7 @@ const AppRoutes = () => {
               </PublicOnlyRoute>
             } 
           />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
     </>
