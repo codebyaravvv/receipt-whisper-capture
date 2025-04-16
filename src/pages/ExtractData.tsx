@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 import { 
   Check, 
@@ -33,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import * as XLSX from 'xlsx';
+import { Link } from "react-router-dom";
 
 // Define interface for extracted data items
 interface ExtractedDataItem {
@@ -42,6 +45,7 @@ interface ExtractedDataItem {
 }
 
 const ExtractData = () => {
+  const [activeTab, setActiveTab] = useState("extract");
   const [activeStep, setActiveStep] = useState(1);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [selectedModelId, setSelectedModelId] = useState("google-vision");
@@ -239,7 +243,18 @@ const ExtractData = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <h1 className="text-3xl font-semibold mb-6">Extract Invoice Data</h1>
+      <h1 className="text-3xl font-semibold mb-6">Document Processing</h1>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="grid grid-cols-2 w-full">
+          <TabsTrigger value="extract">Extract Data</TabsTrigger>
+          <TabsTrigger value="train">
+            <Link to="/train" className="w-full h-full flex items-center justify-center">
+              Train Custom Model
+            </Link>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       
       <div className="mb-8">
         <div className="flex items-center">
@@ -262,218 +277,224 @@ const ExtractData = () => {
         </div>
       </div>
       
-      {activeStep === 1 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-medium mb-4">Upload Invoice</h2>
-          
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-            accept=".pdf,.jpg,.jpeg,.png"
-          />
-          
-          <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-primary transition-colors"
-            onClick={handleUploadClick}
-          >
-            <div className="flex flex-col items-center justify-center gap-2">
-              <UploadCloud className="h-10 w-10 text-gray-400" />
-              <h3 className="text-lg font-medium">Click to upload an invoice</h3>
-              <p className="text-sm text-gray-500 text-center">
-                Upload your invoice in PDF, JPEG, JPG, or PNG format
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {activeStep === 2 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-medium mb-4">Configure Extraction</h2>
-          
-          <div className="mb-6">
-            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-md">
-              <FileText className="h-6 w-6 text-gray-500" />
-              <div className="flex-1 overflow-hidden">
-                <p className="font-medium truncate">{invoiceFile?.name}</p>
-                <p className="text-sm text-gray-500">
-                  {invoiceFile?.size ? `${(invoiceFile.size / 1024).toFixed(2)} KB` : ''}
-                </p>
+      {activeTab === "extract" && (
+        <>
+          {activeStep === 1 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-medium mb-4">Upload Invoice</h2>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png"
+              />
+              
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-primary transition-colors"
+                onClick={handleUploadClick}
+              >
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <UploadCloud className="h-10 w-10 text-gray-400" />
+                  <h3 className="text-lg font-medium">Click to upload an invoice</h3>
+                  <p className="text-sm text-gray-500 text-center">
+                    Upload your invoice in PDF, JPEG, JPG, or PNG format
+                  </p>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveStep(1)}
-              >
-                Change
-              </Button>
             </div>
-          </div>
+          )}
           
-          <div className="space-y-4 mb-6">
-            <div>
-              <Label htmlFor="model-select">OCR Model Selection</Label>
-              <Select 
-                value={selectedModelId} 
-                onValueChange={handleModelSelect}
-                disabled={isLoadingModels}
-              >
-                <SelectTrigger id="model-select" className="w-full">
-                  {isLoadingModels ? (
-                    <div className="flex items-center">
-                      <RotateCw className="h-4 w-4 mr-2 animate-spin" />
-                      Loading models...
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Select OCR model" />
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="google-vision">Google Vision API (Default)</SelectItem>
-                  {availableModels.map(model => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-gray-500 mt-1">
-                Select which OCR engine to use for extracting data
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setActiveStep(1)}>
-              Back
-            </Button>
-            <Button 
-              onClick={processInvoice} 
-              disabled={isExtracting}
-            >
-              {isExtracting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Extracting Data...
-                </>
-              ) : (
-                'Extract Data'
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {activeStep === 2.5 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-medium mb-4">Select Data to Extract</h2>
-          
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">
-              The OCR model has extracted the following data. Select the fields you want to include in the final result.
-            </p>
-          </div>
-          
-          <div className="space-y-4 mb-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Include</TableHead>
-                  <TableHead>Field</TableHead>
-                  <TableHead>Extracted Value</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {extractedDataItems.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-center">
-                      <Checkbox 
-                        checked={item.selected}
-                        onCheckedChange={() => handleToggleSelection(index)}
-                        id={`check-${index}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Label htmlFor={`check-${index}`} className="cursor-pointer">
-                        {item.key}
-                      </Label>
-                    </TableCell>
-                    <TableCell>{item.value}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setActiveStep(2)}>
-              Back
-            </Button>
-            <Button onClick={handleConfigureNext}>
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {activeStep === 3 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-medium mb-4">Extracted Data</h2>
-          
-          {finalExtractedData && (
-            <div className="space-y-6 mb-6">
-              <div className="bg-gray-50 p-4 rounded-md">
-                <table className="w-full">
-                  <tbody>
-                    {Object.entries(finalExtractedData).map(([key, value]) => (
-                      <tr key={key} className="border-b last:border-b-0">
-                        <td className="py-2 font-medium text-gray-700">{key}</td>
-                        <td className="py-2">{value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {activeStep === 2 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-medium mb-4">Configure Extraction</h2>
+              
+              <div className="mb-6">
+                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-md">
+                  <FileText className="h-6 w-6 text-gray-500" />
+                  <div className="flex-1 overflow-hidden">
+                    <p className="font-medium truncate">{invoiceFile?.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {invoiceFile?.size ? `${(invoiceFile.size / 1024).toFixed(2)} KB` : ''}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveStep(1)}
+                  >
+                    Change
+                  </Button>
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex items-center justify-center gap-2"
-                  onClick={downloadJSON}
-                >
-                  <FileJson className="h-4 w-4" />
-                  Download JSON
+              <div className="space-y-4 mb-6">
+                <div>
+                  <Label htmlFor="model-select">OCR Model Selection</Label>
+                  <Select 
+                    value={selectedModelId} 
+                    onValueChange={handleModelSelect}
+                    disabled={isLoadingModels}
+                  >
+                    <SelectTrigger id="model-select" className="w-full">
+                      {isLoadingModels ? (
+                        <div className="flex items-center">
+                          <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                          Loading models...
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="Select OCR model" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="google-vision">Google Vision API (Default)</SelectItem>
+                      <SelectItem value="invoice-parser-pro">Invoice Parser Pro</SelectItem>
+                      <SelectItem value="receipt-analyzer">Receipt Analyzer</SelectItem>
+                      {availableModels.map(model => (
+                        <SelectItem key={model.id} value={model.id}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select which OCR engine to use for extracting data
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep(1)}>
+                  Back
                 </Button>
-                
                 <Button 
-                  variant="outline"
-                  className="flex items-center justify-center gap-2"
-                  onClick={downloadExcel}
+                  onClick={processInvoice} 
+                  disabled={isExtracting}
                 >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Download EXCEL
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  className="flex items-center justify-center gap-2 md:col-span-2"
-                  onClick={copyToClipboard}
-                >
-                  <Clipboard className="h-4 w-4" />
-                  Copy to Clipboard
+                  {isExtracting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Extracting Data...
+                    </>
+                  ) : (
+                    'Extract Data'
+                  )}
                 </Button>
               </div>
             </div>
           )}
           
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={startOver}>
-              Process Another Invoice
-            </Button>
-          </div>
-        </div>
+          {activeStep === 2.5 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-medium mb-4">Select Data to Extract</h2>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">
+                  The OCR model has extracted the following data. Select the fields you want to include in the final result.
+                </p>
+              </div>
+              
+              <div className="space-y-4 mb-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Include</TableHead>
+                      <TableHead>Field</TableHead>
+                      <TableHead>Extracted Value</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {extractedDataItems.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-center">
+                          <Checkbox 
+                            checked={item.selected}
+                            onCheckedChange={() => handleToggleSelection(index)}
+                            id={`check-${index}`}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Label htmlFor={`check-${index}`} className="cursor-pointer">
+                            {item.key}
+                          </Label>
+                        </TableCell>
+                        <TableCell>{item.value}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep(2)}>
+                  Back
+                </Button>
+                <Button onClick={handleConfigureNext}>
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {activeStep === 3 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-medium mb-4">Extracted Data</h2>
+              
+              {finalExtractedData && (
+                <div className="space-y-6 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <table className="w-full">
+                      <tbody>
+                        {Object.entries(finalExtractedData).map(([key, value]) => (
+                          <tr key={key} className="border-b last:border-b-0">
+                            <td className="py-2 font-medium text-gray-700">{key}</td>
+                            <td className="py-2">{value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center justify-center gap-2"
+                      onClick={downloadJSON}
+                    >
+                      <FileJson className="h-4 w-4" />
+                      Download JSON
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      className="flex items-center justify-center gap-2"
+                      onClick={downloadExcel}
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Download EXCEL
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      className="flex items-center justify-center gap-2 md:col-span-2"
+                      onClick={copyToClipboard}
+                    >
+                      <Clipboard className="h-4 w-4" />
+                      Copy to Clipboard
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={startOver}>
+                  Process Another Invoice
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

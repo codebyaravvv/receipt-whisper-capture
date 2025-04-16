@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   FileText,
   Settings,
+  BookOpen
 } from "lucide-react";
 
 import {
@@ -31,6 +32,11 @@ export function AppSidebar() {
       title: "Extract Data",
       icon: FileText,
       path: "/extract",
+    },
+    {
+      title: "Train Model",
+      icon: BookOpen,
+      path: "/train",
     },
     {
       title: "Settings",

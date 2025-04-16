@@ -17,26 +17,18 @@ import {
 const Dashboard = () => {
   // Mock data for the dashboard
   const invoiceData = [
-    { month: "Jan", count: 12 },
-    { month: "Feb", count: 19 },
-    { month: "Mar", count: 15 },
-    { month: "Apr", count: 27 },
-    { month: "May", count: 24 },
-    { month: "Jun", count: 32 },
+    { month: "Jan", count: 3 },
+    { month: "Feb", count: 2 },
+    { month: "Mar", count: 1 },
+    { month: "Apr", count: 5 },
+    { month: "May", count: 4 },
+    { month: "Jun", count: 3 },
   ];
 
   const modelUsageData = [
-    { name: "Default OCR", value: 45 },
-    { name: "Custom Model 1", value: 25 },
-    { name: "Custom Model 2", value: 30 },
-  ];
-
-  const extractionAccuracyData = [
-    { name: "Vendor", accuracy: 92 },
-    { name: "Date", accuracy: 97 },
-    { name: "Amount", accuracy: 95 },
-    { name: "Invoice #", accuracy: 89 },
-    { name: "Tax", accuracy: 85 },
+    { name: "Default OCR", value: 10 },
+    { name: "Invoice Parser Pro", value: 5 },
+    { name: "Receipt Analyzer", value: 3 },
   ];
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
@@ -51,8 +43,8 @@ const Dashboard = () => {
             <CardTitle className="text-sm font-medium">Total Processed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">129</div>
-            <p className="text-xs text-muted-foreground mt-1">+14% from last month</p>
+            <div className="text-2xl font-bold">18</div>
+            <p className="text-xs text-muted-foreground mt-1">+3 from last month</p>
           </CardContent>
         </Card>
         
@@ -61,7 +53,7 @@ const Dashboard = () => {
             <CardTitle className="text-sm font-medium">Trained Models</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">2</div>
             <p className="text-xs text-muted-foreground mt-1">+1 new this month</p>
           </CardContent>
         </Card>
@@ -125,27 +117,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Extraction Accuracy by Field</CardTitle>
-        </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={extractionAccuracyData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" domain={[70, 100]} />
-              <YAxis dataKey="name" type="category" />
-              <RechartsTooltip formatter={(value) => `${value}%`} />
-              <Bar dataKey="accuracy" fill="#82ca9d" name="Accuracy %" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
     </div>
   );
 };
