@@ -4,8 +4,11 @@ import {
   LayoutDashboard,
   FileText,
   Settings,
-  History
+  History,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 import {
   Sidebar,
@@ -16,10 +19,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
   const location = useLocation();
+  const { logout } = useAuth();
+  const { toast } = useToast();
   
   // Navigation items for the sidebar
   const navItems = [
@@ -44,6 +50,14 @@ export function AppSidebar() {
       path: "/settings",
     },
   ];
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+    });
+  };
 
   return (
     <Sidebar>
@@ -70,6 +84,20 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              onClick={handleLogout}
+              tooltip="Logout"
+            >
+              <LogOut className="mr-2" />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
