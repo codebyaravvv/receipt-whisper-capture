@@ -44,10 +44,20 @@ if [[ "$OSTYPE" == "darwin"* ]] && [[ $(uname -m) == "arm64" ]]; then
     # Install base dependencies except TensorFlow first
     pip install numpy pillow scikit-learn matplotlib opencv-python flask flask-cors python-dotenv
     # Then try to install tensorflow-macos
-    pip install tensorflow-macos>=2.7.0
+    pip install tensorflow-macos==2.16.2
     if [ $? -ne 0 ]; then
         echo "Note: Could not install tensorflow-macos. Some features may be limited."
         echo "You may need to install tensorflow-macos manually."
+        echo ""
+        echo "You can try the following manually after the server starts:"
+        echo "  cd backend"
+        echo "  source venv/bin/activate"
+        echo "  pip install tensorflow-macos==2.16.2"
+        echo ""
+        echo "If that doesn't work, you might need to try an alternative installation method:"
+        echo "  pip install --no-cache-dir tensorflow-macos==2.16.2"
+        echo "  # or"
+        echo "  SYSTEM_VERSION_COMPAT=0 pip install tensorflow-macos==2.16.2"
     fi
 else
     # For other platforms, install all requirements normally
