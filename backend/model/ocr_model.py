@@ -1,4 +1,3 @@
-
 import os
 import cv2
 import numpy as np
@@ -16,19 +15,13 @@ try:
     TF_AVAILABLE = True
 except ImportError:
     try:
-        # Try Apple Silicon specific import 
-        import tensorflow.compat.v2 as tf
-        from tensorflow.compat.v2 import keras
+        # Another common import pattern - avoid using compat.v2 directly
+        import tensorflow as tf
+        keras = tf.keras
         TF_AVAILABLE = True
     except ImportError:
-        try:
-            # Another common import pattern
-            import tensorflow as tf
-            keras = tf.keras
-            TF_AVAILABLE = True
-        except ImportError:
-            print("WARNING: TensorFlow could not be imported. Some features will be limited.")
-            TF_AVAILABLE = False
+        print("WARNING: TensorFlow could not be imported. Some features will be limited.")
+        TF_AVAILABLE = False
 
 # Define empty placeholder modules to avoid errors when TF is not available
 if TF_AVAILABLE:
