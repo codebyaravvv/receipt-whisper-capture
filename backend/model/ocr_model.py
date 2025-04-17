@@ -2,13 +2,30 @@
 import os
 import cv2
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import load_model, Model
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Reshape, Dense, Dropout, LSTM, Bidirectional
-from tensorflow.keras.applications import VGG16
 import matplotlib.pyplot as plt
 from PIL import Image
 import json
+import sys
+
+# Try different TensorFlow import strategies based on platform
+try:
+    # Standard TensorFlow import
+    import tensorflow as tf
+    from tensorflow.keras.models import load_model, Model
+    from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Reshape, Dense, Dropout, LSTM, Bidirectional
+    from tensorflow.keras.applications import VGG16
+    TF_AVAILABLE = True
+except ImportError:
+    try:
+        # Apple Silicon specific import pattern
+        import tensorflow.compat.v2 as tf
+        from tensorflow.compat.v2.keras.models import load_model, Model
+        from tensorflow.compat.v2.keras.layers import Input, Conv2D, MaxPooling2D, Reshape, Dense, Dropout, LSTM, Bidirectional
+        from tensorflow.compat.v2.keras.applications import VGG16
+        TF_AVAILABLE = True
+    except ImportError:
+        print("WARNING: TensorFlow could not be imported. Some features will be limited.")
+        TF_AVAILABLE = False
 
 class OCRModel:
     def __init__(self):
@@ -29,15 +46,26 @@ class OCRModel:
                     config_path = os.path.join(self.model_dir, model_name, 'config.json')
                     
                     if os.path.exists(model_path) and os.path.exists(config_path):
-                        self.models[model_name] = {
-                            'model': load_model(model_path),
-                            'config': json.load(open(config_path, 'r'))
-                        }
+                        if TF_AVAILABLE:
+                            self.models[model_name] = {
+                                'model': load_model(model_path),
+                                'config': json.load(open(config_path, 'r'))
+                            }
+                        else:
+                            # Just load config without model when TensorFlow is not available
+                            self.models[model_name] = {
+                                'model': None,
+                                'config': json.load(open(config_path, 'r'))
+                            }
                 except Exception as e:
                     print(f"Failed to load model {model_name}: {str(e)}")
     
     def build_model(self, input_shape=(800, 800, 3), output_classes=128):
         """Build a CNN+RNN model for OCR"""
+        if not TF_AVAILABLE:
+            print("ERROR: Cannot build model - TensorFlow is not available")
+            return None
+            
         # Input layer
         input_img = Input(shape=input_shape)
         
@@ -97,18 +125,20 @@ class OCRModel:
             
             # Get prediction
             model_data = self.models[model_id]
-            model = model_data['model']
             config = model_data['config']
             
-            # For demonstration, we'll return structured data
-            # In a real implementation, this would use the model to extract text and then structure it
-            
-            # Simulate extraction with basic image analysis 
-            # (In a real implementation, this would use the model's predictions)
-            
-            # For demo purposes - detect regions and extract sample data
-            # In real implementation, you would use the model's output to structure the data
-            extracted = self._simulate_extraction(img, config)
+            # Check if TensorFlow is available and model is loaded
+            if not TF_AVAILABLE or model_data['model'] is None:
+                print("WARNING: TensorFlow model not available, using fallback extraction")
+                # Use fallback extraction method
+                extracted = self._simulate_extraction(img, config)
+            else:
+                # For demonstration, we'll return structured data
+                # In a real implementation, this would use the model to extract text and then structure it
+                
+                # Simulate extraction with basic image analysis 
+                # (In a real implementation, this would use the model's predictions)
+                extracted = self._simulate_extraction(img, config)
             
             return extracted
         except Exception as e:
@@ -141,11 +171,15 @@ class OCRModel:
     
     def save_model(self, model, model_id, config):
         """Save a trained model"""
+        if not TF_AVAILABLE and model is not None:
+            print("WARNING: TensorFlow not available, model will not be saved correctly")
+            
         model_path = os.path.join(self.model_dir, model_id)
         os.makedirs(model_path, exist_ok=True)
         
-        # Save model weights
-        model.save(os.path.join(model_path, 'model.h5'))
+        # Save model weights if TensorFlow is available
+        if TF_AVAILABLE and model is not None:
+            model.save(os.path.join(model_path, 'model.h5'))
         
         # Save model config
         with open(os.path.join(model_path, 'config.json'), 'w') as f:
