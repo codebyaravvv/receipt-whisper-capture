@@ -20,30 +20,23 @@ if %ERRORLEVEL% EQU 0 (
   )
 )
 
-REM Find pip command (try pip3 first, then pip)
-where pip3 >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-  set PIP_CMD=pip3
-) else (
-  where pip >nul 2>&1
-  if %ERRORLEVEL% EQU 0 (
-    set PIP_CMD=pip
-  ) else (
-    echo Error: pip not found. Please install pip.
+REM Create virtual environment if it doesn't exist
+if not exist "backend\venv\" (
+  echo Creating Python virtual environment...
+  %PYTHON_CMD% -m venv backend\venv
+  if %ERRORLEVEL% NEQ 0 (
+    echo Failed to create virtual environment. Please install venv using: pip install virtualenv
+    pause
     exit /b 1
   )
 )
 
-REM Create new terminal and start Python backend
+REM Create new terminal and start Python backend with virtual environment
 echo Starting Python backend server...
-echo Installing Python dependencies...
-cd backend && %PIP_CMD% install -r requirements.txt
-if %ERRORLEVEL% NEQ 0 (
-  echo Failed to install Python dependencies. Please check your pip installation.
-  pause
-  exit /b 1
-)
-start cmd /k "cd backend && %PYTHON_CMD% server.py"
+echo Installing Python dependencies in virtual environment...
+
+REM Start a new command window that activates the venv, installs requirements, and starts the server
+start cmd /k "cd backend && venv\Scripts\activate && pip install -r requirements.txt && python server.py"
 
 REM Wait a moment for the backend to initialize
 timeout /t 5

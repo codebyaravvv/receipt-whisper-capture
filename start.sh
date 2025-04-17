@@ -14,22 +14,40 @@ if [ -z "$PYTHON_CMD" ]; then
     exit 1
 fi
 
-# Determine the correct pip command
-PIP_CMD=$(command -v pip3 || command -v pip)
+# Create and activate virtual environment if it doesn't exist
+if [ ! -d "backend/venv" ]; then
+    echo "Creating Python virtual environment..."
+    $PYTHON_CMD -m venv backend/venv
+    if [ $? -ne 0 ]; then
+        echo "Failed to create virtual environment. Please install venv using: pip install virtualenv"
+        exit 1
+    fi
+fi
 
-if [ -z "$PIP_CMD" ]; then
-    echo "Error: pip not found. Please install pip."
+# Activate virtual environment and install dependencies
+echo "Starting Python backend server..."
+cd backend
+echo "Installing Python dependencies in virtual environment..."
+if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
+    source venv/bin/activate
+else
+    # For Git Bash on Windows
+    source venv/Scripts/activate
+fi
+
+# Install requirements in the virtual environment
+pip install -r requirements.txt
+if [ $? -ne 0 ]; then
+    echo "Failed to install Python dependencies. Please check your pip installation."
     exit 1
 fi
 
-# Start the Python backend
-echo "Starting Python backend server..."
-cd backend
-echo "Installing Python dependencies..."
-$PIP_CMD install -r requirements.txt
 echo "Starting server..."
-$PYTHON_CMD server.py &
+python server.py &
 BACKEND_PID=$!
+
+# Deactivate virtual environment
+deactivate
 
 # Wait a moment for the backend to start
 echo "Waiting for backend to initialize..."
