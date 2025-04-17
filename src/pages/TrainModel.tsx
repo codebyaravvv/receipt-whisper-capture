@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import ApiKeyConfig from "@/components/ApiKeyConfig";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import BackendHealthCheck from "@/components/BackendHealthCheck";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -190,6 +191,10 @@ const TrainModel = () => {
           <TabsTrigger value="train">Train Custom Model</TabsTrigger>
         </TabsList>
       </Tabs>
+      
+      <div className="mb-4">
+        <BackendHealthCheck />
+      </div>
       
       <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
         <div className="flex items-start">
