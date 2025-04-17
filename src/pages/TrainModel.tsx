@@ -15,7 +15,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Upload, X, UploadCloud, FileText, AlertTriangle } from "lucide-react";
+import { Loader2, Upload, X, UploadCloud, FileText, AlertTriangle, Brain } from "lucide-react";
 import { trainCustomModel, hasApiKey, checkModelTrainingStatus } from "@/services/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
@@ -191,18 +191,22 @@ const TrainModel = () => {
         </TabsList>
       </Tabs>
       
-      <ApiKeyConfig onApiKeySet={handleApiKeyConfigured} />
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <Brain className="h-5 w-5 text-indigo-600 mt-1 mr-3 flex-shrink-0" />
+          <div>
+            <h3 className="font-medium text-indigo-800">Custom ML/OCR Model</h3>
+            <p className="text-sm text-indigo-700 mt-1">
+              This application uses a custom-built machine learning model for OCR processing.
+              The model combines CNN (Convolutional Neural Networks) for feature extraction and
+              RNN (Recurrent Neural Networks) for sequence modeling to recognize text in documents.
+            </p>
+          </div>
+        </div>
+      </div>
       
       <div className="bg-white rounded-lg shadow-md p-6">
-        {!isApiConfigured && (
-          <Alert className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>API Key Required</AlertTitle>
-            <AlertDescription>
-              Configure your OCR API key above to enable model training
-            </AlertDescription>
-          </Alert>
-        )}
+        <h2 className="text-xl font-medium mb-6">Train a New Model</h2>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -301,7 +305,7 @@ const TrainModel = () => {
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isTraining || !isApiConfigured}
+              disabled={isTraining}
             >
               {isTraining ? (
                 <>
@@ -313,14 +317,32 @@ const TrainModel = () => {
               )}
             </Button>
             
-            <div className="text-xs text-gray-500 mt-4">
-              <p className="mb-1">Training notes:</p>
-              <ul className="list-disc list-inside space-y-1 pl-2">
-                <li>Training typically takes 15-30 minutes depending on file size and complexity</li>
-                <li>You'll receive a notification when training completes</li>
-                <li>For best results, provide diverse samples that represent your actual invoices</li>
-                <li>The more varied your training samples, the better the model will perform</li>
-              </ul>
+            <div className="space-y-4 mt-8 bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-md font-medium">About Our Custom ML/OCR Model</h3>
+              <div className="text-xs text-gray-600 space-y-2">
+                <p className="font-medium">Architecture:</p>
+                <ul className="list-disc list-inside space-y-1 pl-2">
+                  <li>CNN layers (based on VGG16) for visual feature extraction</li>
+                  <li>Bidirectional LSTM layers for sequence modeling</li>
+                  <li>Custom dense layers for text recognition</li>
+                </ul>
+                
+                <p className="font-medium mt-2">Training Process:</p>
+                <ul className="list-disc list-inside space-y-1 pl-2">
+                  <li>Data preprocessing and augmentation</li>
+                  <li>Feature extraction from document images</li>
+                  <li>Pattern recognition for field detection</li>
+                  <li>Sequence modeling for text extraction</li>
+                </ul>
+                
+                <p className="font-medium mt-2">Training Tips:</p>
+                <ul className="list-disc list-inside space-y-1 pl-2">
+                  <li>Use clear, high-resolution document images</li>
+                  <li>Include diverse samples that represent your actual documents</li>
+                  <li>Training typically takes 15-30 minutes depending on complexity</li>
+                  <li>The more varied your training samples, the better the results</li>
+                </ul>
+              </div>
             </div>
           </form>
         </Form>

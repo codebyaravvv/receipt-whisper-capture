@@ -20,36 +20,29 @@ interface CustomModel {
   status: 'training' | 'ready' | 'failed';
 }
 
-// OCR API endpoint - replace with your actual OCR API service URL
-const OCR_API_URL = "https://api.ocr-service.com";
+// Custom OCR backend URL - point to the Flask server
+const OCR_BACKEND_URL = "http://localhost:5000/api";
 
-// API key management - in a real app, this would be server-side
+// API key management (will be removed in final version as we're building our own system)
 const getApiKey = () => {
-  // For demo purposes only - in production, API keys should never be stored in localStorage
-  // This is a temporary solution until backend integration is complete
   return localStorage.getItem('ocr_api_key') || '';
 };
 
-// Check if API key exists
+// This will be deprecated once we fully transition to our custom model
 export const hasApiKey = (): boolean => {
-  return !!getApiKey();
+  return true; // Always return true since we're using our own backend now
 };
 
-// Save API key (temporary solution)
+// Will be deprecated
 export const saveApiKey = (apiKey: string): void => {
   localStorage.setItem('ocr_api_key', apiKey);
 };
 
 export const fetchAvailableModels = async (): Promise<CustomModel[]> => {
   try {
-    if (!hasApiKey()) {
-      throw new Error("API key not configured");
-    }
-
-    const response = await fetch(`${OCR_API_URL}/models`, {
+    const response = await fetch(`${OCR_BACKEND_URL}/models`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${getApiKey()}`,
         'Content-Type': 'application/json',
       },
     });
@@ -63,9 +56,8 @@ export const fetchAvailableModels = async (): Promise<CustomModel[]> => {
   } catch (error) {
     console.error('Error fetching models:', error);
     
-    // Fallback to localStorage models for development/demo purposes
-    const mockModels = localStorage.getItem('customModels');
-    return mockModels ? JSON.parse(mockModels) : [];
+    // Return empty array if can't connect to backend
+    return [];
   }
 };
 
@@ -74,21 +66,13 @@ export const extractInvoiceData = async (
   modelId: string
 ): Promise<ExtractResponse> => {
   try {
-    if (!hasApiKey()) {
-      throw new Error("API key not configured");
-    }
-
     // Create FormData object to send the file
     const formData = new FormData();
     formData.append('file', file);
     formData.append('modelId', modelId);
 
-    const response = await fetch(`${OCR_API_URL}/extract`, {
+    const response = await fetch(`${OCR_BACKEND_URL}/extract`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${getApiKey()}`,
-        // Don't set Content-Type with FormData, browser will set it automatically with boundary
-      },
       body: formData,
     });
 
@@ -105,19 +89,6 @@ export const extractInvoiceData = async (
   } catch (error) {
     console.error('Error extracting data:', error);
     
-    // Fallback sample response for development/demo if API fails
-    if (process.env.NODE_ENV === 'development') {
-      return {
-        success: true,
-        data: {
-          "Invoice Number": "INV-2023-0042",
-          "Date": "2023-04-16", 
-          "Total Amount": "$1,245.00",
-          "Vendor": "Office Supplies Inc."
-        }
-      };
-    }
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to extract data from invoice"
@@ -131,10 +102,6 @@ export const trainCustomModel = async (
   files: File[]
 ): Promise<TrainingResponse> => {
   try {
-    if (!hasApiKey()) {
-      throw new Error("API key not configured");
-    }
-
     // Create FormData object to send files
     const formData = new FormData();
     formData.append('name', name);
@@ -145,12 +112,8 @@ export const trainCustomModel = async (
       formData.append('training_files', file);
     });
 
-    const response = await fetch(`${OCR_API_URL}/train`, {
+    const response = await fetch(`${OCR_BACKEND_URL}/train`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${getApiKey()}`,
-        // Don't set Content-Type with FormData, browser will set it automatically with boundary
-      },
       body: formData,
     });
 
@@ -160,35 +123,13 @@ export const trainCustomModel = async (
 
     const data = await response.json();
     
-    // Store model in localStorage for UI state preservation (temporary solution)
-    const newModel = {
-      id: data.model_id || `model_${Date.now()}`,
-      name,
-      description,
-      createdAt: new Date().toISOString(),
-      status: 'training'
-    };
-    
-    const existingModels = localStorage.getItem('customModels');
-    const models = existingModels ? JSON.parse(existingModels) : [];
-    models.push(newModel);
-    localStorage.setItem('customModels', JSON.stringify(models));
-    
     return {
       success: true,
       modelName: name,
-      modelId: data.model_id
+      modelId: data.modelId
     };
   } catch (error) {
     console.error('Error training model:', error);
-    
-    // If API key missing, return specific error
-    if (error instanceof Error && error.message === "API key not configured") {
-      return {
-        success: false,
-        error: "API key not configured. Please set up your OCR API key in settings."
-      };
-    }
     
     return {
       success: false,
@@ -197,17 +138,11 @@ export const trainCustomModel = async (
   }
 };
 
-// New function to check training status
 export const checkModelTrainingStatus = async (modelId: string): Promise<string> => {
   try {
-    if (!hasApiKey()) {
-      throw new Error("API key not configured");
-    }
-
-    const response = await fetch(`${OCR_API_URL}/models/${modelId}/status`, {
+    const response = await fetch(`${OCR_BACKEND_URL}/models/${modelId}/status`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${getApiKey()}`,
         'Content-Type': 'application/json',
       },
     });
