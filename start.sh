@@ -59,40 +59,54 @@ fi
 # Upgrade pip first
 pip install --upgrade pip
 
-# Check if this is Apple Silicon Mac
-if [[ "$OSTYPE" == "darwin"* ]] && [[ $(uname -m) == "arm64" ]]; then
-    echo "Detected Apple Silicon Mac"
-    
-    # Install base dependencies first
-    pip install numpy pillow scikit-learn matplotlib opencv-python flask flask-cors python-dotenv
-    
-    # Determine compatible TensorFlow version based on Python version
-    if [[ "$PY_VERSION" == 3.1* ]]; then
-        echo "Python 3.10+ detected - attempting to install compatible tensorflow..."
+# Install main requirements
+pip install -r requirements.txt
+
+# Check for platform-specific dependencies and attempt installation
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Detected macOS"
+    if [[ $(uname -m) == "arm64" ]]; then
+        echo "Detected Apple Silicon (arm64)"
+        # Try to install TensorFlow for Apple Silicon
         pip install tensorflow-macos || {
-            echo "Failed to install tensorflow-macos automatically."
-            echo "Please install tensorflow manually after the server starts by running:"
-            echo "  cd backend"
-            echo "  source venv/bin/activate"
-            echo "  pip install tensorflow-macos"
-            echo ""
-            echo "If that doesn't work, you may need to downgrade to Python 3.10 or use a different approach."
+            echo "Could not install tensorflow-macos."
+            echo "This is okay - the OCR backend will use basic functionality."
+            echo "If you want full ML capabilities, please follow installation instructions manually."
         }
     else
-        # Try to install tensorflow-macos for older Python versions
-        pip install tensorflow-macos || {
-            echo "Note: Could not install tensorflow-macos. Some features may be limited."
-            echo "You may need to install tensorflow-macos manually."
+        echo "Detected Intel Mac"
+        # Try to install regular TensorFlow
+        pip install tensorflow || {
+            echo "Could not install tensorflow."
+            echo "This is okay - the OCR backend will use basic functionality."
         }
     fi
-else
-    # For other platforms, install all requirements normally
-    pip install -r requirements.txt
+elif [[ "$OSTYPE" == "linux"* ]]; then
+    echo "Detected Linux"
+    # Try to install regular TensorFlow
+    pip install tensorflow || {
+        echo "Could not install tensorflow."
+        echo "This is okay - the OCR backend will use basic functionality."
+    }
 fi
 
-echo "Starting server..."
-python server.py &
+echo "Starting server with improved error handling..."
+python server.py > server.log 2>&1 &
 BACKEND_PID=$!
+
+# Wait to verify the server started successfully
+echo "Waiting for backend to initialize..."
+sleep 2
+
+# Check if process is still running
+if ! ps -p $BACKEND_PID > /dev/null; then
+    echo "ERROR: Backend failed to start. Check server.log for details."
+    cat server.log
+    exit 1
+fi
+
+# Save PID to file for later cleanup
+echo $BACKEND_PID > backend_pid.txt
 
 # Deactivate virtual environment
 deactivate
@@ -100,8 +114,8 @@ deactivate
 # Go back to the root directory
 cd ..
 
-# Wait a moment for the backend to start
-echo "Waiting for backend to initialize..."
+# Wait a moment for the backend to initialize
+echo "Waiting for backend to fully initialize..."
 sleep 5
 
 # Start the React app
@@ -110,4 +124,10 @@ npm run dev
 
 # When the React app is terminated, also terminate the backend
 echo "Shutting down backend server..."
-kill $BACKEND_PID
+if [ -f "backend/backend_pid.txt" ]; then
+    BACKEND_PID=$(cat backend/backend_pid.txt)
+    kill $BACKEND_PID 2>/dev/null || echo "Backend already stopped"
+    rm backend/backend_pid.txt
+fi
+
+echo "Application shutdown complete."

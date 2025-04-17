@@ -34,15 +34,33 @@ if not exist "venv\" (
   )
 )
 
-REM Create new terminal and start Python backend with virtual environment
-echo Starting Python backend server...
+REM Check Python version
+%PYTHON_CMD% -c "import sys; print(f'Detected Python {sys.version_info.major}.{sys.version_info.minor}')"
+
+REM Activate the virtual environment and install dependencies
 echo Installing Python dependencies in virtual environment...
+call venv\Scripts\activate
 
-REM Start a new command window that activates the venv, installs requirements, and starts the server
-start cmd /k "cd backend && venv\Scripts\activate && pip install -r requirements.txt && python server.py"
+REM Upgrade pip first
+pip install --upgrade pip
 
-REM Wait a moment for the backend to initialize
-timeout /t 5
+REM Install requirements
+pip install -r requirements.txt
+
+REM Try to install TensorFlow (might fail on some systems but that's okay)
+pip install tensorflow || (
+  echo Could not install tensorflow.
+  echo This is okay - the OCR backend will use basic functionality.
+  echo If you want full ML capabilities, please follow TensorFlow installation instructions manually.
+)
+
+REM Start the backend server in the current console
+echo Starting Python backend server with improved error handling...
+start cmd /k "cd backend && venv\Scripts\activate && python server.py"
+
+REM Wait for backend to initialize
+echo Waiting for backend to initialize...
+timeout /t 5 /nobreak
 
 REM Go back to root directory
 cd ..

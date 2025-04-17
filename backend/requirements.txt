@@ -10,3 +10,8 @@ opencv-python>=4.5.5
 flask>=2.0.2
 flask-cors>=3.0.10
 python-dotenv>=0.19.2
+
+# Optional ML dependencies - will be used if available, otherwise fallback to basic functionality
+# tensorflow is commented out as it needs to be installed separately based on platform
+# tensorflow>=2.8.0; platform_system!="Darwin" or platform_machine!="arm64"
+# for MacOS with Apple Silicon, use: pip install tensorflow-macos
