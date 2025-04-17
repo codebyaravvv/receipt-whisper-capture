@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +47,6 @@ const TrainModel = () => {
     },
   });
 
-  // Effect to check training status periodically
   useEffect(() => {
     let intervalId: number | undefined;
     
@@ -86,7 +84,6 @@ const TrainModel = () => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
-    // Convert FileList to array and validate file types
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
       const supportedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
@@ -103,7 +100,6 @@ const TrainModel = () => {
     
     setTrainingFiles(prev => [...prev, ...validFiles]);
     
-    // Reset input value to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -159,7 +155,6 @@ const TrainModel = () => {
           setCurrentModelId(result.modelId);
         }
         
-        // Reset form
         form.reset();
         setTrainingFiles([]);
       } else {
@@ -196,12 +191,11 @@ const TrainModel = () => {
         </TabsList>
       </Tabs>
       
-      {/* API Configuration Component */}
       <ApiKeyConfig onApiKeySet={handleApiKeyConfigured} />
       
       <div className="bg-white rounded-lg shadow-md p-6">
         {!isApiConfigured && (
-          <Alert variant="warning" className="mb-6">
+          <Alert className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>API Key Required</AlertTitle>
             <AlertDescription>

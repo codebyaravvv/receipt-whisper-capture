@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +39,6 @@ import { Link } from "react-router-dom";
 import ApiKeyConfig from "@/components/ApiKeyConfig";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Define interface for extracted data items
 interface ExtractedDataItem {
   key: string;
   value: string;
@@ -66,7 +64,7 @@ const ExtractData = () => {
 
   const handleApiKeyConfigured = () => {
     setIsApiConfigured(true);
-    refetchModels(); // Refresh models after API key is configured
+    refetchModels();
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,7 +273,6 @@ const ExtractData = () => {
         </TabsList>
       </Tabs>
       
-      {/* API Configuration Component */}
       <ApiKeyConfig onApiKeySet={handleApiKeyConfigured} />
       
       <div className="mb-8">
@@ -306,7 +303,7 @@ const ExtractData = () => {
               <h2 className="text-xl font-medium mb-4">Upload Invoice</h2>
               
               {!isApiConfigured && (
-                <Alert variant="warning" className="mb-6">
+                <Alert className="mb-6">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>API Key Required</AlertTitle>
                   <AlertDescription>
