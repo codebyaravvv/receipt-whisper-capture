@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,10 +16,12 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Upload, X, UploadCloud, FileText } from "lucide-react";
-import { trainCustomModel } from "@/services/api";
+import { Loader2, Upload, X, UploadCloud, FileText, AlertTriangle } from "lucide-react";
+import { trainCustomModel, hasApiKey, checkModelTrainingStatus } from "@/services/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
+import ApiKeyConfig from "@/components/ApiKeyConfig";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -34,6 +36,8 @@ const TrainModel = () => {
   const [activeTab, setActiveTab] = useState("train");
   const [trainingFiles, setTrainingFiles] = useState<File[]>([]);
   const [isTraining, setIsTraining] = useState(false);
+  const [isApiConfigured, setIsApiConfigured] = useState(hasApiKey());
+  const [currentModelId, setCurrentModelId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -43,6 +47,40 @@ const TrainModel = () => {
       description: "",
     },
   });
+
+  // Effect to check training status periodically
+  useEffect(() => {
+    let intervalId: number | undefined;
+    
+    if (currentModelId) {
+      intervalId = window.setInterval(async () => {
+        const status = await checkModelTrainingStatus(currentModelId);
+        
+        if (status === 'ready') {
+          toast({
+            title: "Training Complete",
+            description: "Your custom model is now ready to use",
+          });
+          setCurrentModelId(null);
+          setIsTraining(false);
+          clearInterval(intervalId);
+        } else if (status === 'failed') {
+          toast({
+            title: "Training Failed",
+            description: "There was an issue training your model",
+            variant: "destructive",
+          });
+          setCurrentModelId(null);
+          setIsTraining(false);
+          clearInterval(intervalId);
+        }
+      }, 10000); // Check every 10 seconds
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [currentModelId]);
 
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -79,7 +117,20 @@ const TrainModel = () => {
     fileInputRef.current?.click();
   };
 
+  const handleApiKeyConfigured = () => {
+    setIsApiConfigured(true);
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!isApiConfigured) {
+      toast({
+        title: "API Key Required",
+        description: "Please configure your OCR API key before training a model",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (trainingFiles.length === 0) {
       toast({
         title: "No files selected",
@@ -100,9 +151,13 @@ const TrainModel = () => {
       
       if (result.success) {
         toast({
-          title: "Success",
-          description: `Model "${result.modelName}" has been trained and is now available for use`,
+          title: "Training Started",
+          description: `Model "${result.modelName}" is now being trained. This may take several minutes.`,
         });
+        
+        if (result.modelId) {
+          setCurrentModelId(result.modelId);
+        }
         
         // Reset form
         form.reset();
@@ -113,6 +168,7 @@ const TrainModel = () => {
           description: result.error || "Failed to train model",
           variant: "destructive",
         });
+        setIsTraining(false);
       }
     } catch (error) {
       console.error('Error during model training:', error);
@@ -121,7 +177,6 @@ const TrainModel = () => {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
-    } finally {
       setIsTraining(false);
     }
   };
@@ -141,7 +196,20 @@ const TrainModel = () => {
         </TabsList>
       </Tabs>
       
+      {/* API Configuration Component */}
+      <ApiKeyConfig onApiKeySet={handleApiKeyConfigured} />
+      
       <div className="bg-white rounded-lg shadow-md p-6">
+        {!isApiConfigured && (
+          <Alert variant="warning" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>API Key Required</AlertTitle>
+            <AlertDescription>
+              Configure your OCR API key above to enable model training
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -204,7 +272,7 @@ const TrainModel = () => {
                   <p className="text-sm text-gray-500 text-center">
                     Upload labeled invoice files (PDF, JPEG, JPG, PNG)
                     <br />
-                    2-3 sample invoices recommended for initial training
+                    5-10 sample invoices recommended for optimal training
                   </p>
                 </div>
               </div>
@@ -239,7 +307,7 @@ const TrainModel = () => {
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isTraining}
+              disabled={isTraining || !isApiConfigured}
             >
               {isTraining ? (
                 <>
@@ -254,9 +322,10 @@ const TrainModel = () => {
             <div className="text-xs text-gray-500 mt-4">
               <p className="mb-1">Training notes:</p>
               <ul className="list-disc list-inside space-y-1 pl-2">
-                <li>Training typically takes 5-15 minutes depending on file size and complexity</li>
-                <li>The more diverse your training samples, the better the model will perform</li>
-                <li>Once training is complete, your model will be available in the OCR model dropdown</li>
+                <li>Training typically takes 15-30 minutes depending on file size and complexity</li>
+                <li>You'll receive a notification when training completes</li>
+                <li>For best results, provide diverse samples that represent your actual invoices</li>
+                <li>The more varied your training samples, the better the model will perform</li>
               </ul>
             </div>
           </form>

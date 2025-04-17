@@ -21,9 +21,10 @@ import {
   FileJson, 
   FileSpreadsheet, 
   Download, 
-  Clipboard 
+  Clipboard,
+  AlertTriangle 
 } from "lucide-react";
-import { extractInvoiceData, fetchAvailableModels } from "@/services/api";
+import { extractInvoiceData, fetchAvailableModels, hasApiKey } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Table, 
@@ -36,6 +37,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import * as XLSX from 'xlsx';
 import { Link } from "react-router-dom";
+import ApiKeyConfig from "@/components/ApiKeyConfig";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Define interface for extracted data items
 interface ExtractedDataItem {
@@ -48,16 +51,23 @@ const ExtractData = () => {
   const [activeTab, setActiveTab] = useState("extract");
   const [activeStep, setActiveStep] = useState(1);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState("google-vision");
+  const [selectedModelId, setSelectedModelId] = useState("default");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedDataItems, setExtractedDataItems] = useState<ExtractedDataItem[]>([]);
   const [finalExtractedData, setFinalExtractedData] = useState<Record<string, string> | null>(null);
+  const [isApiConfigured, setIsApiConfigured] = useState(hasApiKey());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: availableModels = [], isLoading: isLoadingModels } = useQuery({
+  const { data: availableModels = [], isLoading: isLoadingModels, refetch: refetchModels } = useQuery({
     queryKey: ['models'],
-    queryFn: fetchAvailableModels
+    queryFn: fetchAvailableModels,
+    enabled: isApiConfigured,
   });
+
+  const handleApiKeyConfigured = () => {
+    setIsApiConfigured(true);
+    refetchModels(); // Refresh models after API key is configured
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -88,6 +98,15 @@ const ExtractData = () => {
   };
 
   const processInvoice = async () => {
+    if (!isApiConfigured) {
+      toast({
+        title: "API Key Required",
+        description: "Please configure your OCR API key before extracting data",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!invoiceFile) {
       toast({
         title: "No file selected",
@@ -256,6 +275,9 @@ const ExtractData = () => {
         </TabsList>
       </Tabs>
       
+      {/* API Configuration Component */}
+      <ApiKeyConfig onApiKeySet={handleApiKeyConfigured} />
+      
       <div className="mb-8">
         <div className="flex items-center">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${activeStep >= 1 ? 'bg-primary border-primary text-white' : 'border-gray-300'}`}>
@@ -283,6 +305,16 @@ const ExtractData = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-medium mb-4">Upload Invoice</h2>
               
+              {!isApiConfigured && (
+                <Alert variant="warning" className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>API Key Required</AlertTitle>
+                  <AlertDescription>
+                    Configure your OCR API key above to enable data extraction
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <input
                 type="file"
                 ref={fileInputRef}
@@ -292,7 +324,7 @@ const ExtractData = () => {
               />
               
               <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-primary transition-colors"
+                className={`border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-primary transition-colors ${!isApiConfigured ? 'opacity-50 pointer-events-none' : ''}`}
                 onClick={handleUploadClick}
               >
                 <div className="flex flex-col items-center justify-center gap-2">
@@ -335,7 +367,7 @@ const ExtractData = () => {
                   <Select 
                     value={selectedModelId} 
                     onValueChange={handleModelSelect}
-                    disabled={isLoadingModels}
+                    disabled={isLoadingModels || !isApiConfigured}
                   >
                     <SelectTrigger id="model-select" className="w-full">
                       {isLoadingModels ? (
@@ -348,9 +380,7 @@ const ExtractData = () => {
                       )}
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="google-vision">Google Vision API (Default)</SelectItem>
-                      <SelectItem value="invoice-parser-pro">Invoice Parser Pro</SelectItem>
-                      <SelectItem value="receipt-analyzer">Receipt Analyzer</SelectItem>
+                      <SelectItem value="default">Default OCR Engine</SelectItem>
                       {availableModels.map(model => (
                         <SelectItem key={model.id} value={model.id}>
                           {model.name}
@@ -370,7 +400,7 @@ const ExtractData = () => {
                 </Button>
                 <Button 
                   onClick={processInvoice} 
-                  disabled={isExtracting}
+                  disabled={isExtracting || !isApiConfigured}
                 >
                   {isExtracting ? (
                     <>
