@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -166,7 +165,8 @@ def health_check():
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    # Change default port from 5000 to 5050 to avoid conflicts with AirPlay on macOS
+    port = int(os.environ.get('PORT', 5050))
     host = os.environ.get('HOST', '0.0.0.0')
     debug = os.environ.get('DEBUG', 'True').lower() == 'true'
     

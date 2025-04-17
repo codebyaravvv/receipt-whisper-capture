@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
-// Backend URL from environment or fallback to localhost
-const OCR_BACKEND_URL = "http://localhost:5000/api";
+// Backend URL from environment or fallback to new port 5050
+const OCR_BACKEND_URL = "http://localhost:5050/api";
 
 const BackendHealthCheck = () => {
   const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
@@ -145,7 +144,7 @@ const BackendHealthCheck = () => {
         <p>Troubleshooting steps:</p>
         <ol className="list-decimal ml-4 space-y-1">
           <li>Make sure the backend server is running using <code>./start_simple.sh</code> (Mac/Linux) or <code>start_simple.bat</code> (Windows)</li>
-          <li>Check that port 5000 is not in use by another application</li>
+          <li>Check that port 5050 is not in use by another application</li>
           <li>Ensure your firewall is not blocking connections</li>
           <li>Try restarting your browser</li>
         </ol>

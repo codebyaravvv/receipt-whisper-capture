@@ -1,4 +1,3 @@
-
 interface ExtractResponse {
   success: boolean;
   data?: Record<string, string>;
@@ -20,8 +19,8 @@ interface CustomModel {
   status: 'training' | 'ready' | 'failed';
 }
 
-// Custom OCR backend URL - point to the Flask server
-const OCR_BACKEND_URL = "http://localhost:5000/api";
+// Custom OCR backend URL - point to the Flask server with updated port
+const OCR_BACKEND_URL = "http://localhost:5050/api";
 
 // Utility to create a request with timeout and CORS settings
 const createRequest = async (url: string, options: RequestInit = {}, timeout = 10000): Promise<Response> => {
