@@ -10,15 +10,21 @@ mkdir -p backend/training_data/models
 echo "Starting Python backend server..."
 cd backend
 pip install -r requirements.txt
-python server.py &
+python3 server.py &
 BACKEND_PID=$!
 
-# Wait a moment for the backend to start
+# Wait a moment for the backend to initialize
 echo "Waiting for backend to initialize..."
 sleep 5
 
 # Go back to the root directory
 cd ..
+
+# Install npm dependencies if node_modules doesn't exist
+if [ ! -d "node_modules" ]; then
+  echo "Installing npm dependencies..."
+  npm install
+fi
 
 # Start the React app
 echo "Starting React frontend..."
