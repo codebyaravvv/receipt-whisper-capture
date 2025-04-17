@@ -14,10 +14,20 @@ if [ -z "$PYTHON_CMD" ]; then
     exit 1
 fi
 
+# Determine the correct pip command
+PIP_CMD=$(command -v pip3 || command -v pip)
+
+if [ -z "$PIP_CMD" ]; then
+    echo "Error: pip not found. Please install pip."
+    exit 1
+fi
+
 # Start the Python backend
 echo "Starting Python backend server..."
 cd backend
-pip install -r requirements.txt
+echo "Installing Python dependencies..."
+$PIP_CMD install -r requirements.txt
+echo "Starting server..."
 $PYTHON_CMD server.py &
 BACKEND_PID=$!
 
