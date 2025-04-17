@@ -14,6 +14,10 @@ if [ -z "$PYTHON_CMD" ]; then
     exit 1
 fi
 
+# Check Python version
+PY_VERSION=$($PYTHON_CMD -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+echo "Detected Python version: $PY_VERSION"
+
 # Go to backend directory
 cd backend
 
@@ -57,33 +61,33 @@ pip install --upgrade pip
 
 # Check if this is Apple Silicon Mac
 if [[ "$OSTYPE" == "darwin"* ]] && [[ $(uname -m) == "arm64" ]]; then
-    echo "Detected Apple Silicon Mac - installing tensorflow-macos"
-    # Install base dependencies except TensorFlow first
+    echo "Detected Apple Silicon Mac"
+    
+    # Install base dependencies first
     pip install numpy pillow scikit-learn matplotlib opencv-python flask flask-cors python-dotenv
-    # Then try to install tensorflow-macos
-    pip install tensorflow-macos==2.16.2
-    if [ $? -ne 0 ]; then
-        echo "Note: Could not install tensorflow-macos. Some features may be limited."
-        echo "You may need to install tensorflow-macos manually."
-        echo ""
-        echo "You can try the following manually after the server starts:"
-        echo "  cd backend"
-        echo "  source venv/bin/activate"
-        echo "  pip install tensorflow-macos==2.16.2"
-        echo ""
-        echo "If that doesn't work, you might need to try an alternative installation method:"
-        echo "  pip install --no-cache-dir tensorflow-macos==2.16.2"
-        echo "  # or"
-        echo "  SYSTEM_VERSION_COMPAT=0 pip install tensorflow-macos==2.16.2"
+    
+    # Determine compatible TensorFlow version based on Python version
+    if [[ "$PY_VERSION" == 3.1* ]]; then
+        echo "Python 3.10+ detected - attempting to install compatible tensorflow..."
+        pip install tensorflow-macos || {
+            echo "Failed to install tensorflow-macos automatically."
+            echo "Please install tensorflow manually after the server starts by running:"
+            echo "  cd backend"
+            echo "  source venv/bin/activate"
+            echo "  pip install tensorflow-macos"
+            echo ""
+            echo "If that doesn't work, you may need to downgrade to Python 3.10 or use a different approach."
+        }
+    else
+        # Try to install tensorflow-macos for older Python versions
+        pip install tensorflow-macos || {
+            echo "Note: Could not install tensorflow-macos. Some features may be limited."
+            echo "You may need to install tensorflow-macos manually."
+        }
     fi
 else
     # For other platforms, install all requirements normally
     pip install -r requirements.txt
-fi
-
-if [ $? -ne 0 ]; then
-    echo "There were some issues with Python dependencies."
-    echo "The app may still work with limited functionality."
 fi
 
 echo "Starting server..."
