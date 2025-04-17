@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,11 @@ const formSchema = z.object({
   }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// Define the type for our form values
+type FormValues = {
+  name: string;
+  description: string;
+};
 
 const TrainModel = () => {
   const [activeTab, setActiveTab] = useState("train");
