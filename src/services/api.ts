@@ -23,6 +23,31 @@ interface CustomModel {
 // Custom OCR backend URL - point to the Flask server
 const OCR_BACKEND_URL = "http://localhost:5000/api";
 
+// Utility to create a request with timeout and CORS settings
+const createRequest = async (url: string, options: RequestInit = {}, timeout = 10000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const defaultOptions: RequestInit = {
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+      signal: controller.signal
+    };
+    
+    const response = await fetch(url, { ...defaultOptions, ...options });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+};
+
 // API key management (will be removed in final version as we're building our own system)
 const getApiKey = () => {
   return localStorage.getItem('ocr_api_key') || '';
@@ -41,7 +66,7 @@ export const saveApiKey = (apiKey: string): void => {
 export const fetchAvailableModels = async (): Promise<CustomModel[]> => {
   try {
     console.log('Fetching models from:', `${OCR_BACKEND_URL}/models`);
-    const response = await fetch(`${OCR_BACKEND_URL}/models`, {
+    const response = await createRequest(`${OCR_BACKEND_URL}/models`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -76,14 +101,15 @@ export const extractInvoiceData = async (
     formData.append('modelId', modelId);
 
     console.log('Sending extraction request to:', `${OCR_BACKEND_URL}/extract`);
-    const response = await fetch(`${OCR_BACKEND_URL}/extract`, {
+    const response = await createRequest(`${OCR_BACKEND_URL}/extract`, {
       method: 'POST',
       body: formData,
-    });
+    }, 60000); // 60 seconds timeout for extraction
 
     if (!response.ok) {
       console.error('OCR extraction failed:', response.status, response.statusText);
-      throw new Error(`OCR extraction failed: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`OCR extraction failed: ${response.statusText}. Details: ${errorText}`);
     }
 
     const data = await response.json();
@@ -124,10 +150,10 @@ export const trainCustomModel = async (
     });
 
     console.log('Sending training request to:', `${OCR_BACKEND_URL}/train`);
-    const response = await fetch(`${OCR_BACKEND_URL}/train`, {
+    const response = await createRequest(`${OCR_BACKEND_URL}/train`, {
       method: 'POST',
       body: formData,
-    });
+    }, 120000); // 2 minutes timeout for training request
 
     if (!response.ok) {
       console.error('Model training failed:', response.status, response.statusText);
@@ -157,7 +183,7 @@ export const trainCustomModel = async (
 export const checkModelTrainingStatus = async (modelId: string): Promise<string> => {
   try {
     console.log('Checking status for model:', modelId);
-    const response = await fetch(`${OCR_BACKEND_URL}/models/${modelId}/status`, {
+    const response = await createRequest(`${OCR_BACKEND_URL}/models/${modelId}/status`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

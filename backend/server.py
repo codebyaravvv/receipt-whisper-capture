@@ -16,8 +16,11 @@ logger = logging.getLogger('ocr_backend')
 
 app = Flask(__name__)
 
-# More robust CORS configuration
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+# More permissive CORS configuration for development
+CORS(app, resources={r"/api/*": {"origins": "*"}}, 
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "Accept"],
+     methods=["GET", "POST", "OPTIONS"])
 
 # Initialize the OCR model
 try:
@@ -146,17 +149,21 @@ def extract_data():
         logger.error(traceback.format_exc())
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
-    return jsonify({'status': 'healthy', 'message': 'OCR backend is running'})
-
-# Add a preflight route for better CORS handling
-@app.route('/api/health', methods=['OPTIONS'])
-def health_check_preflight():
-    response = jsonify({'status': 'ok'})
-    response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    return response
+    # Handle CORS preflight request
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        return response
+        
+    return jsonify({
+        'status': 'healthy', 
+        'message': 'OCR backend is running',
+        'version': '1.0.0',
+        'tensorflow': False  # Indicate we're running without TensorFlow
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
