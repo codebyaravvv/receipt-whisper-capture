@@ -10,7 +10,7 @@ REM Create new terminal and start Python backend
 echo Starting Python backend server...
 start cmd /k "cd backend && pip install -r requirements.txt && python server.py"
 
-REM Wait a moment for the backend to start
+REM Wait a moment for the backend to initialize
 timeout /t 5
 
 REM Install npm dependencies if not already installed

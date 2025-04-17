@@ -32,6 +32,8 @@ const formSchema = z.object({
   }),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 const TrainModel = () => {
   const [activeTab, setActiveTab] = useState("train");
   const [trainingFiles, setTrainingFiles] = useState<File[]>([]);
@@ -40,7 +42,7 @@ const TrainModel = () => {
   const [currentModelId, setCurrentModelId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -118,7 +120,7 @@ const TrainModel = () => {
     setIsApiConfigured(true);
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     if (!isApiConfigured) {
       toast({
         title: "API Key Required",
