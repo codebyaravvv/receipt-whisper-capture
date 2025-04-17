@@ -1,6 +1,6 @@
 
 # Core dependencies
-numpy>=1.20.0
+numpy>=1.20.0,<2.0.0
 pillow>=9.0.0
 scikit-learn>=1.0.2
 matplotlib>=3.5.1
@@ -13,5 +13,6 @@ python-dotenv>=0.19.2
 
 # Optional ML dependencies - will be used if available, otherwise fallback to basic functionality
 # tensorflow is commented out as it needs to be installed separately based on platform
-# tensorflow>=2.8.0; platform_system!="Darwin" or platform_machine!="arm64"
-# for MacOS with Apple Silicon, use: pip install tensorflow-macos
+# For Python 3.12.10 on macOS, try:
+# pip install tensorflow-macos==2.13.0; platform_system=="Darwin" and platform_machine=="arm64"
+# pip install tensorflow==2.13.0; platform_system!="Darwin" or platform_machine!="arm64"

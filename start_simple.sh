@@ -6,17 +6,13 @@ mkdir -p backend/uploads
 mkdir -p backend/training_data
 mkdir -p backend/training_data/models
 
-# Determine the correct Python command
-PYTHON_CMD=$(command -v python3 || command -v python)
-
-if [ -z "$PYTHON_CMD" ]; then
-    echo "Error: Python not found. Please install Python."
-    exit 1
-fi
+# Use Python 3.12.10 specifically
+PYTHON_CMD="/opt/homebrew/bin/python3.12"
+echo "Using Python interpreter: $PYTHON_CMD"
 
 # Check Python version
 PY_VERSION=$($PYTHON_CMD -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-echo "Detected Python version: $PY_VERSION"
+echo "Python version: $PY_VERSION"
 
 # Install npm dependencies if not already installed
 if [ ! -d "node_modules" ]; then
@@ -37,12 +33,12 @@ cd backend
 
 # Check if venv exists, if not create it
 if [ ! -d "venv" ]; then
-    echo "Creating Python virtual environment..."
+    echo "Creating Python virtual environment with Python 3.12.10..."
     $PYTHON_CMD -m venv venv
 fi
 
 # Activate virtual environment
-source venv/bin/activate 2>/dev/null || source venv/bin/activate 2>/dev/null || source venv/Scripts/activate 2>/dev/null
+source venv/bin/activate 2>/dev/null || source venv/Scripts/activate 2>/dev/null
 
 # Install requirements
 echo "Installing Python requirements..."
@@ -57,10 +53,9 @@ cd ..
 echo "Waiting for backend to initialize..."
 sleep 5
 
-# Start the React frontend
+# Start the React frontend with explicit npx path
 echo "Starting React frontend..."
-echo "Running: npx vite"
-npx vite
+PATH="$PATH:./node_modules/.bin" npx vite
 
 # When the frontend process ends, kill the backend
 echo "Shutting down backend server..."

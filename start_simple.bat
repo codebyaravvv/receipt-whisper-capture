@@ -6,13 +6,16 @@ mkdir backend\uploads 2>nul
 mkdir backend\training_data 2>nul
 mkdir backend\training_data\models 2>nul
 
-REM Find Python command
-where python >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
+REM Use specific Python interpreter (change this path to your actual Python 3.12 path on Windows)
+set PYTHON_CMD=python3.12
+echo Using Python interpreter: %PYTHON_CMD%
+
+REM Check if interpreter exists
+where %PYTHON_CMD% >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+  echo Python 3.12 not found with command '%PYTHON_CMD%'
+  echo Falling back to 'python' command...
   set PYTHON_CMD=python
-) else (
-  echo Error: Python not found. Please install Python.
-  exit /b 1
 )
 
 REM Install npm dependencies if not already installed
@@ -29,8 +32,9 @@ REM Wait a moment for the backend to initialize
 echo Waiting for backend to initialize...
 timeout /t 5 /nobreak
 
-REM Start the React frontend
+REM Start the React frontend with node_modules/.bin in PATH
 echo Starting React frontend with npx...
+set PATH=%PATH%;.\node_modules\.bin
 call npx vite
 
 echo Application shutdown. Backend may still be running in another window.
