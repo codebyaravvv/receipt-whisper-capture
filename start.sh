@@ -14,25 +14,42 @@ if [ -z "$PYTHON_CMD" ]; then
     exit 1
 fi
 
+# Go to backend directory
+cd backend
+
 # Create and activate virtual environment if it doesn't exist
-if [ ! -d "backend/venv" ]; then
+if [ ! -d "venv" ]; then
     echo "Creating Python virtual environment..."
-    $PYTHON_CMD -m venv backend/venv
+    $PYTHON_CMD -m venv venv
     if [ $? -ne 0 ]; then
         echo "Failed to create virtual environment. Please install venv using: pip install virtualenv"
         exit 1
     fi
 fi
 
-# Activate virtual environment and install dependencies
-echo "Starting Python backend server..."
-cd backend
-echo "Installing Python dependencies in virtual environment..."
+# Check for correct activate script location based on OS and shell
 if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
-    source venv/bin/activate
+    if [ -f "venv/bin/activate" ]; then
+        ACTIVATE_SCRIPT="venv/bin/activate"
+    else
+        echo "Looking for activate script in alternative locations..."
+        find venv -name activate
+        echo "Please try activating with the path shown above, or reinstall the virtual environment."
+        exit 1
+    fi
 else
     # For Git Bash on Windows
-    source venv/Scripts/activate
+    ACTIVATE_SCRIPT="venv/Scripts/activate"
+fi
+
+echo "Activating virtual environment using: $ACTIVATE_SCRIPT"
+source "$ACTIVATE_SCRIPT"
+
+if [ $? -ne 0 ]; then
+    echo "Failed to activate virtual environment. Try one of these commands manually:"
+    echo "  source venv/bin/activate   # Linux/macOS"
+    echo "  source venv/Scripts/activate   # Git Bash on Windows"
+    exit 1
 fi
 
 # Upgrade pip first
@@ -76,12 +93,12 @@ BACKEND_PID=$!
 # Deactivate virtual environment
 deactivate
 
+# Go back to the root directory
+cd ..
+
 # Wait a moment for the backend to start
 echo "Waiting for backend to initialize..."
 sleep 5
-
-# Go back to the root directory
-cd ..
 
 # Start the React app
 echo "Starting React frontend..."

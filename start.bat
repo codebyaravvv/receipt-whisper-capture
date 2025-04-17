@@ -20,10 +20,13 @@ if %ERRORLEVEL% EQU 0 (
   )
 )
 
+REM Change to backend directory
+cd backend
+
 REM Create virtual environment if it doesn't exist
-if not exist "backend\venv\" (
+if not exist "venv\" (
   echo Creating Python virtual environment...
-  %PYTHON_CMD% -m venv backend\venv
+  %PYTHON_CMD% -m venv venv
   if %ERRORLEVEL% NEQ 0 (
     echo Failed to create virtual environment. Please install venv using: pip install virtualenv
     pause
@@ -40,6 +43,9 @@ start cmd /k "cd backend && venv\Scripts\activate && pip install -r requirements
 
 REM Wait a moment for the backend to initialize
 timeout /t 5
+
+REM Go back to root directory
+cd ..
 
 REM Install npm dependencies if not already installed
 if not exist "node_modules\" (
