@@ -7,25 +7,49 @@ from PIL import Image
 import json
 import sys
 
-# Try different TensorFlow import strategies based on platform
+# More robust TensorFlow import strategy
+TF_AVAILABLE = False
 try:
-    # Standard TensorFlow import
+    # Try standard import first
     import tensorflow as tf
-    from tensorflow.keras.models import load_model, Model
-    from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Reshape, Dense, Dropout, LSTM, Bidirectional
-    from tensorflow.keras.applications import VGG16
+    from tensorflow import keras
     TF_AVAILABLE = True
 except ImportError:
     try:
-        # Apple Silicon specific import pattern
+        # Try Apple Silicon specific import 
         import tensorflow.compat.v2 as tf
-        from tensorflow.compat.v2.keras.models import load_model, Model
-        from tensorflow.compat.v2.keras.layers import Input, Conv2D, MaxPooling2D, Reshape, Dense, Dropout, LSTM, Bidirectional
-        from tensorflow.compat.v2.keras.applications import VGG16
+        from tensorflow.compat.v2 import keras
         TF_AVAILABLE = True
     except ImportError:
-        print("WARNING: TensorFlow could not be imported. Some features will be limited.")
-        TF_AVAILABLE = False
+        try:
+            # Another common import pattern
+            import tensorflow as tf
+            keras = tf.keras
+            TF_AVAILABLE = True
+        except ImportError:
+            print("WARNING: TensorFlow could not be imported. Some features will be limited.")
+            TF_AVAILABLE = False
+
+# Define empty placeholder modules to avoid errors when TF is not available
+if TF_AVAILABLE:
+    Model = keras.models.Model
+    load_model = keras.models.load_model
+    # Import layers
+    Input = keras.layers.Input
+    Conv2D = keras.layers.Conv2D
+    MaxPooling2D = keras.layers.MaxPooling2D
+    Reshape = keras.layers.Reshape
+    Dense = keras.layers.Dense
+    Dropout = keras.layers.Dropout
+    LSTM = keras.layers.LSTM
+    Bidirectional = keras.layers.Bidirectional
+    # Import applications
+    VGG16 = keras.applications.VGG16
+else:
+    # Create dummy placeholders when TF is not available
+    class DummyModule:
+        pass
+    Model = load_model = Input = Conv2D = MaxPooling2D = Reshape = Dense = Dropout = LSTM = Bidirectional = VGG16 = DummyModule
 
 class OCRModel:
     def __init__(self):
