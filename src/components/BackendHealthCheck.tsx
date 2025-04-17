@@ -8,6 +8,7 @@ const OCR_BACKEND_URL = "http://localhost:5000/api";
 const BackendHealthCheck = () => {
   const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [error, setError] = useState<string | null>(null);
+  const [checkCount, setCheckCount] = useState(0);
 
   useEffect(() => {
     const checkBackendHealth = async () => {
@@ -26,17 +27,28 @@ const BackendHealthCheck = () => {
           console.log('Backend connection successful');
           setStatus('connected');
           setError(null);
+          
+          // If we were previously disconnected, show success toast
+          if (status === 'disconnected' && checkCount > 0) {
+            toast({
+              title: "Backend Connected",
+              description: "Successfully connected to the ML/OCR backend",
+              variant: "default"
+            });
+          }
         } else {
           const errorText = await response.text();
           console.error('Backend health check failed:', response.status, errorText);
           setStatus('disconnected');
           
-          // Use toast to show more detailed error
-          toast({
-            title: "Backend Connection Failed",
-            description: `Server responded with status ${response.status}: ${errorText}`,
-            variant: "destructive"
-          });
+          // Only show toast for first error or if status changes
+          if (status !== 'disconnected') {
+            toast({
+              title: "Backend Connection Failed",
+              description: `Server responded with status ${response.status}: ${errorText}`,
+              variant: "destructive"
+            });
+          }
 
           setError(`Server responded with status ${response.status}`);
         }
@@ -44,16 +56,22 @@ const BackendHealthCheck = () => {
         console.error('Backend connection error:', error);
         setStatus('disconnected');
         
-        // More detailed error handling
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        toast({
-          title: "Backend Connection Error",
-          description: `Could not connect to ML/OCR backend: ${errorMessage}`,
-          variant: "destructive"
-        });
+        // Only show toast for first error or if status changes
+        if (status !== 'disconnected') {
+          // More detailed error handling
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          toast({
+            title: "Backend Connection Error",
+            description: `Could not connect to ML/OCR backend: ${errorMessage}`,
+            variant: "destructive"
+          });
+        }
 
-        setError(errorMessage);
+        setError(error instanceof Error ? error.message : 'Unknown error');
       }
+      
+      // Increment check count
+      setCheckCount(prev => prev + 1);
     };
 
     // Check immediately and then every 10 seconds
@@ -61,7 +79,7 @@ const BackendHealthCheck = () => {
     const interval = setInterval(checkBackendHealth, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [status, checkCount]);
 
   if (status === 'checking') {
     return (
@@ -89,7 +107,7 @@ const BackendHealthCheck = () => {
       </div>
       {error && <p className="text-xs ml-6">{error}</p>}
       <p className="text-xs ml-6">
-        Make sure the Python backend is running. You can restart it by running the start script.
+        Make sure the Python backend is running. Try using the simplified start script.
       </p>
     </div>
   );
