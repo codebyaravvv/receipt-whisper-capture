@@ -35,11 +35,28 @@ else
     source venv/Scripts/activate
 fi
 
-# Install requirements in the virtual environment
-pip install -r requirements.txt
+# Upgrade pip first
+pip install --upgrade pip
+
+# Check if this is Apple Silicon Mac
+if [[ "$OSTYPE" == "darwin"* ]] && [[ $(uname -m) == "arm64" ]]; then
+    echo "Detected Apple Silicon Mac - installing tensorflow-macos"
+    # Install base dependencies except TensorFlow first
+    pip install numpy pillow scikit-learn matplotlib opencv-python flask flask-cors python-dotenv
+    # Then try to install tensorflow-macos
+    pip install tensorflow-macos>=2.7.0
+    if [ $? -ne 0 ]; then
+        echo "Note: Could not install tensorflow-macos. Some features may be limited."
+        echo "You may need to install tensorflow-macos manually."
+    fi
+else
+    # For other platforms, install all requirements normally
+    pip install -r requirements.txt
+fi
+
 if [ $? -ne 0 ]; then
-    echo "Failed to install Python dependencies. Please check your pip installation."
-    exit 1
+    echo "There were some issues with Python dependencies."
+    echo "The app may still work with limited functionality."
 fi
 
 echo "Starting server..."

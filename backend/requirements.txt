@@ -1,10 +1,18 @@
 
+# Core dependencies
 numpy>=1.20.0
-tensorflow>=2.7.0
-opencv-python>=4.5.5
-matplotlib>=3.5.1
 pillow>=9.0.0
 scikit-learn>=1.0.2
+matplotlib>=3.5.1
+opencv-python>=4.5.5
+
+# Web framework
 flask>=2.0.2
 flask-cors>=3.0.10
 python-dotenv>=0.19.2
+
+# For Apple Silicon (M1/M2/M3) Macs
+# Use tensorflow-macos instead of tensorflow
+tensorflow-macos>=2.7.0; sys_platform == 'darwin' and platform_machine == 'arm64'
+# For Intel Macs and other platforms
+tensorflow>=2.7.0; sys_platform != 'darwin' or platform_machine != 'arm64'
